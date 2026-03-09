@@ -1,9 +1,23 @@
 import streamlit as st
-import mlx.core as mx
-from mlx_vlm import load, generate
+import pandas as pd
 import gc
 import re
-import pandas as pd
+import os
+
+# Check for MLX support (Apple Silicon ONLY)
+try:
+    import mlx.core as mx
+    from mlx_vlm import load, generate
+    from mlx_vlm.generate import stream_generate
+    HAS_MLX = True
+except (ImportError, ModuleNotFoundError):
+    HAS_MLX = False
+    try:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
+        from peft import PeftModel
+    except ImportError:
+        st.error("Missing cloud dependencies. Please check requirements.txt")
 
 st.set_page_config(page_title="LLM Alignment Lab", layout="centered")
 
@@ -15,12 +29,28 @@ if "current_model" not in st.session_state:
     st.session_state.current_model = "Ministral Fine-Tuned (V3)"
 
 # Mapping friendly names to paths
+# Note: On Cloud, 'path' and 'adapter' should be valid Hugging Face Hub IDs
 MODEL_MAP = {
-    "Ministral Baseline": {"path": "mlx-community/Ministral-3-3B-Instruct-2512-4bit", "adapter": None},
-    "Ministral Fine-Tuned (V2)": {"path": "mlx-community/Ministral-3-3B-Instruct-2512-4bit", "adapter": "ministral_adapters_v2"},
-    "Ministral Fine-Tuned (V3)": {"path": "mlx-community/Ministral-3-3B-Instruct-2512-4bit", "adapter": "ministral_adapters_v3"},
-    "Qwen Baseline": {"path": "mlx-community/Qwen3.5-4B-MLX-4bit", "adapter": None},
-    "Qwen Fine-Tuned (V1)": {"path": "mlx-community/Qwen3.5-4B-MLX-4bit", "adapter": "adapters"}
+    "Ministral Baseline": {
+        "path": "mistralai/Ministral-3b-instruct-2501" if not HAS_MLX else "mlx-community/Ministral-3-3B-Instruct-2512-4bit", 
+        "adapter": None
+    },
+    "Ministral Fine-Tuned (V2)": {
+        "path": "mistralai/Ministral-3b-instruct-2501" if not HAS_MLX else "mlx-community/Ministral-3-3B-Instruct-2512-4bit", 
+        "adapter": "limitless235/ministral-v2-adapters" if not HAS_MLX else "ministral_adapters_v2"
+    },
+    "Ministral Fine-Tuned (V3)": {
+        "path": "mistralai/Ministral-3b-instruct-2501" if not HAS_MLX else "mlx-community/Ministral-3-3B-Instruct-2512-4bit", 
+        "adapter": "limitless235/ministral-v3-adapters" if not HAS_MLX else "ministral_adapters_v3"
+    },
+    "Qwen Baseline": {
+        "path": "Qwen/Qwen2.5-7B-Instruct" if not HAS_MLX else "mlx-community/Qwen3.5-4B-MLX-4bit", 
+        "adapter": None
+    },
+    "Qwen Fine-Tuned (V1)": {
+        "path": "Qwen/Qwen2.5-7B-Instruct" if not HAS_MLX else "mlx-community/Qwen3.5-4B-MLX-4bit", 
+        "adapter": "limitless235/qwen-v1-adapters" if not HAS_MLX else "adapters"
+    }
 }
 
 if "show_benchmarks" not in st.session_state:
@@ -242,24 +272,53 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
         if "model" not in st.session_state:
             with st.spinner(f"Loading {st.session_state.current_model}..."):
                 conf = MODEL_MAP[st.session_state.current_model]
-                model, processor = load(conf["path"], adapter_path=conf["adapter"])
-                st.session_state.model = model
-                st.session_state.processor = processor
+                if HAS_MLX:
+                    model, processor = load(conf["path"], adapter_path=conf["adapter"])
+                    st.session_state.model = model
+                    st.session_state.processor = processor
+                else:
+                    # Cloud Fallback (Transformers)
+                    tokenizer = AutoTokenizer.from_pretrained(conf["path"])
+                    # Use 4-bit quantization if on low-memory cloud
+                    model = AutoModelForCausalLM.from_pretrained(
+                        conf["path"], 
+                        torch_dtype=torch.float16, 
+                        device_map="auto",
+                        load_in_4bit=True
+                    )
+                    if conf["adapter"]:
+                        model = PeftModel.from_pretrained(model, conf["adapter"])
+                    st.session_state.model = model
+                    st.session_state.processor = tokenizer
 
         prompt_text = f"<|im_start|>system\nYou are a professional AI assistant. If a premise is fundamentally irrational, point it out immediately.<|im_end|>\n<|im_start|>user\n{last_prompt}<|im_end|>\n<|im_start|>assistant\n"
         
-        from mlx_vlm.generate import stream_generate
         response_placeholder = st.empty()
         thought_placeholder = st.empty()
         full_response = ""
         thought_process = ""
         is_thinking = False
         
-        for result in stream_generate(st.session_state.model, st.session_state.processor, prompt_text, max_tokens=2048):
-            if hasattr(result, "text"):
-                chunk = result.text
-            else:
-                chunk = str(result)
+        if HAS_MLX:
+            # MLX Streaming
+            stream = stream_generate(st.session_state.model, st.session_state.processor, prompt_text, max_tokens=2048)
+        else:
+            # Transformers Streaming
+            from threading import Thread
+            streamer = TextIteratorStreamer(st.session_state.processor, skip_prompt=True, skip_special_tokens=True)
+            inputs = st.session_state.processor(prompt_text, return_tensors="pt").to(st.session_state.model.device)
+            generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=2048)
+            thread = Thread(target=st.session_state.model.generate, kwargs=generation_kwargs)
+            thread.start()
+            stream = streamer
+
+        for chunk in stream:
+            if HAS_MLX:
+                if hasattr(chunk, "text"):
+                    chunk = chunk.text
+                else:
+                    chunk = str(chunk)
+            # Both types of chunks are now strings here
             
             full_response += chunk
             

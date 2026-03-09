@@ -1,8 +1,18 @@
-mlx>=0.16.1
-mlx-vlm>=0.0.9
-huggingface_hub
+# Core dependencies
 pandas
 rich
 requests
-streamlit
-altair
+huggingface_hub
+
+# Web app (pinned for cloud compatibility)
+streamlit>=1.31.1
+altair>=5.2.0
+
+# Inference (MLX for local Mac, Transformers for Cloud/Linux)
+mlx; platform_system == "Darwin"
+mlx-vlm; platform_system == "Darwin"
+transformers
+torch
+peft
+accelerate
+bitsandbytes
