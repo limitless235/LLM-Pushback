@@ -1,0 +1,8 @@
+mlx>=0.16.1
+mlx-vlm>=0.0.9
+huggingface_hub
+pandas
+rich
+requests
+streamlit
+altair

@@ -1,0 +1,20 @@
+# Environment
+venv/
+.env
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+
+# Results & Models (Large Files)
+ministral_adapters*/
+qwen_bullshitbench/
+*.json
+!data/*.json
+*.safetensors
+*.bin
+*.model
+
+# Logs
+*.log
