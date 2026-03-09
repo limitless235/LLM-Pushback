@@ -1,8 +1,8 @@
 # Core dependencies
+huggingface_hub
 pandas
 rich
 requests
-huggingface_hub
 
 # Web app (pinned for cloud compatibility)
 streamlit>=1.31.1

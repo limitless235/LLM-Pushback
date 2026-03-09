@@ -43,6 +43,10 @@ MODEL_MAP = {
         "path": "mistralai/Ministral-3b-instruct-2501" if not HAS_MLX else "mlx-community/Ministral-3-3B-Instruct-2512-4bit", 
         "adapter": "limitless235/ministral-v3-adapters" if not HAS_MLX else "ministral_adapters_v3"
     },
+    "Ministral DPO": {
+        "path": "mistralai/Ministral-3b-instruct-2501" if not HAS_MLX else "mlx-community/Ministral-3-3B-Instruct-2512-4bit",
+        "adapter": "limitless235/ministral-dpo-adapters" if not HAS_MLX else "ministral_dpo_adapters"
+    },
     "Qwen Baseline": {
         "path": "Qwen/Qwen2.5-7B-Instruct" if not HAS_MLX else "mlx-community/Qwen3.5-4B-MLX-4bit", 
         "adapter": None
@@ -318,6 +322,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
                     chunk = chunk.text
                 else:
                     chunk = str(chunk)
+            # Both types of chunks are now strings here
             # Both types of chunks are now strings here
             
             full_response += chunk
