@@ -24,7 +24,6 @@ Ministral was our most challenging target due to a high rate of base-model align
 
 - **Baseline Green Rate**: 4.0%
 - **Fine-Tuned (V2) Green Rate**: 68.7%
-- **Fine-Tuned (V3) Green Rate**: 74.2% (Estimated)
 - **Max Improvement**: +70.2%
 
 ### Ministral Domain Breakdown (Score 2: Clear Pushback)
@@ -32,7 +31,6 @@ Ministral was our most challenging target due to a high rate of base-model align
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | Baseline | 7.5% | 0.0% | 0.0% | 0.0% | 6.7% |
 | Fine-Tuned (V2) | 69.2% | 53.3% | 80.0% | 73.3% | 66.7% |
-| **Fine-Tuned (V3)**| **77.5%** | **72.0%** | **80.0%** | **86.7%** | **85.0%** |
 
 ---
 
