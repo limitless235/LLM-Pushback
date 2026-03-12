@@ -20,7 +20,7 @@ The Qwen model was tuned primarily for software and general reasoning domains.
 ---
 
 ## 2. Ministral-3B Evaluation Results
-Ministral was our most challenging target due to a high rate of base-model alignment failures (safety refusals instead of reasoning).
+Ministral was the most challenging target due to a high rate of base-model alignment failures (safety refusals instead of reasoning).
 
 - **Baseline Green Rate**: 4.0%
 - **Fine-Tuned (V2) Green Rate**: 68.7%
