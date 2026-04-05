@@ -1,6 +1,6 @@
 # Ministral Alignment Lab: BullshitBench Evaluation
 
-A specialized research project focused on aligning small language models (**Ministral-3B** and **Qwen-4B**) to identify and push back against nonsensical logical premises using **Direct Preference Optimization (DPO)** and **Supervised Fine-Tuning (SFT)** on Apple Silicon (MLX).
+A specialized project focused on aligning small language models (**Ministral-3B** and **Qwen-4B**) to identify and push back against nonsensical logical premises using **Direct Preference Optimization (DPO)** and **Supervised Fine-Tuning (SFT)** on Apple Silicon (MLX).
 
 ## Key Results
 * **Ministral-3B**: Improved from **4.0%** (Baseline) to **74.2%** (SFT V3) Green Rate.
